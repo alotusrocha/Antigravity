@@ -45,6 +45,14 @@ const btnPendingLogout = document.getElementById('btn-pending-logout');
 const btnGoogleLogin = document.getElementById('btn-google-login');
 const btnLogout = document.getElementById('btn-logout');
 
+// AI Chat Elements
+const btnChatToggle = document.getElementById('btn-chat-toggle');
+const chatWindow = document.getElementById('chat-window');
+const btnChatClose = document.getElementById('btn-chat-close');
+const formChat = document.getElementById('form-chat');
+const chatInput = document.getElementById('chat-input');
+const chatMessages = document.getElementById('chat-messages');
+
 let currentUser = null;
 
 // Page Load
@@ -210,7 +218,7 @@ function setupEventListeners() {
                 const { error } = await _supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo: window.location.origin
+                        redirectTo: window.location.href
                     }
                 });
                 if (error) throw error;
@@ -241,6 +249,21 @@ function setupEventListeners() {
         btnPrintReport.addEventListener('click', () => {
             window.print();
         });
+    }
+
+    // AI Chat
+    if (btnChatToggle && chatWindow && btnChatClose) {
+        btnChatToggle.addEventListener('click', () => {
+            chatWindow.style.display = chatWindow.style.display === 'none' ? 'flex' : 'none';
+        });
+
+        btnChatClose.addEventListener('click', () => {
+            chatWindow.style.display = 'none';
+        });
+    }
+
+    if (formChat) {
+        formChat.addEventListener('submit', handleChatSubmit);
     }
 }
 
@@ -662,6 +685,76 @@ window.deleteTransaction = async (id) => {
 // Helpers
 function formatCurrency(value) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+// --- AI Chat Functions ---
+async function handleChatSubmit(e) {
+    e.preventDefault();
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    // 1. Add user message to UI
+    appendChatMessage('user', message);
+    chatInput.value = '';
+
+    // 2. Determine if we are waiting for Edge Function
+    appendChatLoading();
+
+    try {
+        const { data, error } = await _supabase.functions.invoke('chat-agent', {
+            body: { prompt: message }
+        });
+
+        removeChatLoading();
+
+        if (error) {
+            console.error('Edge Function Error:', error);
+            appendChatMessage('ai', 'Desculpe, ocorreu um erro ao se comunicar com o servidor.');
+        } else if (data && data.reply) {
+            appendChatMessage('ai', data.reply);
+            // Se a IA registrou uma transação, atualizamos a tela
+            if (data.reply.includes('sucesso')) {
+                await initApp(); // Recarrega os dados do banco
+            }
+        } else {
+            appendChatMessage('ai', 'Não consegui formular uma resposta. Tente novamente.');
+        }
+
+    } catch (err) {
+        removeChatLoading();
+        console.error('Fetch Error:', err);
+        appendChatMessage('ai', 'Falha na conexão. Verifique sua internet.');
+    }
+}
+
+function appendChatMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = `message ${role}-message`;
+    div.innerHTML = `<div class="message-content">${text}</div>`;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function appendChatLoading() {
+    const div = document.createElement('div');
+    div.id = 'chat-loading-indicator';
+    div.className = 'message ai-message';
+    div.innerHTML = `
+        <div class="loading-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    `;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeChatLoading() {
+    const loadingEl = document.getElementById('chat-loading-indicator');
+    if (loadingEl) {
+        loadingEl.remove();
+    }
 }
 
 function populateProductSelect() {
