@@ -12,158 +12,163 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
-<body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="logo">
-                <span class="logo-icon">✨</span>
-                <span class="logo-text">CleanStock</span>
+<!-- Auth Overlay -->
+<div id="auth-overlay" class="auth-overlay active">
+    <div class="auth-card card">
+        <div class="auth-header">
+            <span class="logo-icon">✨</span>
+            <h2>CleanStock</h2>
+            <p>Gestão Inteligente de Estoque</p>
+        </div>
+
+        <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">Entrar</button>
+            <button class="auth-tab" data-tab="signup">Criar Conta</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="form-login" class="auth-form active">
+            <div class="form-group">
+                <label for="login-email">E-mail</label>
+                <input type="email" id="login-email" required placeholder="seu@email.com">
             </div>
-            <nav class="nav-menu">
-                <button class="nav-item active" data-view="dashboard">
-                    <span class="icon">📊</span> Dashboard
-                </button>
-                <button class="nav-item" data-view="products">
-                    <span class="icon">📦</span> Produtos
-                </button>
-                <button class="nav-item" data-view="transactions">
-                    <span class="icon">⇄</span> Transações
-                </button>
-            </nav>
-            <div class="sidebar-footer">
-                <div class="status-indicator">
-                    <span class="dot online"></span>
-                    <span class="status-text">Database Online</span>
+            <div class="form-group">
+                <label for="login-password">Senha</label>
+                <input type="password" id="login-password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mt-3" id="btn-login">Entrar</button>
+        </form>
+
+        <!-- Sign Up Form -->
+        <form id="form-signup" class="auth-form">
+            <div class="form-group">
+                <label for="signup-email">E-mail</label>
+                <input type="email" id="signup-email" required placeholder="seu@email.com">
+            </div>
+            <div class="form-group">
+                <label for="signup-password">Senha (mínimo 6 caracteres)</label>
+                <input type="password" id="signup-password" required minlength="6" placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mt-3" id="btn-signup">Criar Conta</button>
+        </form>
+
+        <div class="auth-divider">
+            <span>ou</span>
+        </div>
+
+        <button class="btn btn-google w-100" id="btn-google-login">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20px" height="20px">
+                <path fill="#FFC107"
+                    d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+                <path fill="#FF3D00"
+                    d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+                <path fill="#4CAF50"
+                    d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
+                <path fill="#1976D2"
+                    d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+            </svg>
+            Continuar com o Google
+        </button>
+    </div>
+</div>
+
+<!-- Main App Container -->
+<div class="app-container" style="display: none;">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo">
+            <span class="logo-icon">✨</span>
+            <span class="logo-text">CleanStock</span>
+        </div>
+        <nav class="nav-menu">
+            <button class="nav-item active" data-view="dashboard">
+                <span class="icon">📊</span> Dashboard
+            </button>
+            <button class="nav-item" data-view="products">
+                <span class="icon">📦</span> Produtos
+            </button>
+            <button class="nav-item" data-view="transactions">
+                <span class="icon">⇄</span> Transações
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="status-indicator">
+                <span class="dot online"></span>
+                <span class="status-text">Database Online</span>
+            </div>
+        </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="top-header">
+            <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="search-bar">
+                <input type="text" id="global-search" placeholder="Pesquisar produtos ou vendas...">
+            </div>
+            <div class="user-profile">
+                <span class="notifications">🔔</span>
+                <div class="avatar">EB</div>
+                <button class="btn btn-secondary btn-sm" id="btn-logout" title="Sair">Sair</button>
+            </div>
+        </header>
+
+        <!-- Dashboard View -->
+        <section id="view-dashboard" class="content-view active">
+            <div class="view-header">
+                <h1>Resumo Geral</h1>
+                <p class="subtitle">Visão rápida da performance do seu estoque.</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="stat-label">Lucro Real Estimado</span>
+                        <span class="stat-value" id="total-profit">R$ 0,00</span>
+                    </div>
+                    <div class="stat-chart lucro">📈</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="stat-label">Valor do Inventário (Custo)</span>
+                        <span class="stat-value" id="inventory-value">R$ 0,00</span>
+                    </div>
+                    <div class="stat-chart estoque">📦</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="stat-label">Valor Potencial de Venda</span>
+                        <span class="stat-value" id="potential-sales-value">R$ 0,00</span>
+                    </div>
+                    <div class="stat-chart vendas">💰</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="stat-label">Itens Abaixo do Mínimo</span>
+                        <span class="stat-value" id="low-stock-count">0</span>
+                    </div>
+                    <div class="stat-chart alertas">⚠️</div>
                 </div>
             </div>
-        </aside>
-        <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Header -->
-            <header class="top-header">
-                <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-                <div class="search-bar">
-                    <input type="text" id="global-search" placeholder="Pesquisar produtos ou vendas...">
-                </div>
-                <div class="user-profile">
-                    <span class="notifications">🔔</span>
-                    <div class="avatar">EB</div>
-                </div>
-            </header>
-
-            <!-- Dashboard View -->
-            <section id="view-dashboard" class="content-view active">
-                <div class="view-header">
-                    <h1>Resumo Geral</h1>
-                    <p class="subtitle">Visão rápida da performance do seu estoque.</p>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <span class="stat-label">Lucro Real Estimado</span>
-                            <span class="stat-value" id="total-profit">R$ 0,00</span>
-                        </div>
-                        <div class="stat-chart lucro">📈</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <span class="stat-label">Valor do Inventário (Custo)</span>
-                            <span class="stat-value" id="inventory-value">R$ 0,00</span>
-                        </div>
-                        <div class="stat-chart estoque">📦</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <span class="stat-label">Valor Potencial de Venda</span>
-                            <span class="stat-value" id="potential-sales-value">R$ 0,00</span>
-                        </div>
-                        <div class="stat-chart vendas">💰</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <span class="stat-label">Itens Abaixo do Mínimo</span>
-                            <span class="stat-value" id="low-stock-count">0</span>
-                        </div>
-                        <div class="stat-chart alertas">⚠️</div>
-                    </div>
-                </div>
-
-                <div class="dashboard-details">
-                    <div class="recent-sales card">
-                        <h3>Vendas Recentes</h3>
-                        <div class="table-container">
-                            <table id="recent-sales-table">
-                                <thead>
-                                    <tr>
-                                        <th>Data</th>
-                                        <th>Produto</th>
-                                        <th>Qtd</th>
-                                        <th>Total</th>
-                                        <th>Lucro</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Dynamic rows -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Products View -->
-            <section id="view-products" class="content-view">
-                <div class="view-header">
-                    <h1>Gerenciar Produtos</h1>
-                    <button class="btn btn-primary" id="btn-add-product">+ Novo Produto</button>
-                </div>
-                <div class="card">
+            <div class="dashboard-details">
+                <div class="recent-sales card">
+                    <h3>Vendas Recentes</h3>
                     <div class="table-container">
-                        <table id="products-table">
-                            <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>Tamanho</th>
-                                    <th>Estoque</th>
-                                    <th>Preço Un. (Custo)</th>
-                                    <th>Preço Venda</th>
-                                    <th>Alerta Mín.</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Dynamic rows -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Transactions View -->
-            <section id="view-transactions" class="content-view">
-                <div class="view-header">
-                    <h1>Registro de Transações</h1>
-                    <button class="btn btn-primary" id="btn-add-transaction">+ Nova Entrada/Saída</button>
-                </div>
-                <div class="card">
-                    <div class="table-container">
-                        <table id="transactions-table">
+                        <table id="recent-sales-table">
                             <thead>
                                 <tr>
                                     <th>Data</th>
-                                    <th>Tipo</th>
                                     <th>Produto</th>
-                                    <th>Quantidade</th>
-                                    <th>Preço Un. (Venda)</th>
-                                    <th>Ações</th>
+                                    <th>Qtd</th>
+                                    <th>Total</th>
+                                    <th>Lucro</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -172,94 +177,150 @@
                         </table>
                     </div>
                 </div>
-            </section>
-        </main>
-    </div>
+            </div>
+        </section>
 
-    <!-- Modals -->
-    <div id="modal-product" class="modal">
-        <div class="modal-content card">
-            <h2 id="modal-product-title">Adicionar Produto</h2>
-            <form id="form-product">
-                <input type="hidden" id="product-id">
+        <!-- Products View -->
+        <section id="view-products" class="content-view">
+            <div class="view-header">
+                <h1>Gerenciar Produtos</h1>
+                <button class="btn btn-primary" id="btn-add-product">+ Novo Produto</button>
+            </div>
+            <div class="card">
+                <div class="table-container">
+                    <table id="products-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Tamanho</th>
+                                <th>Estoque</th>
+                                <th>Preço Un. (Custo)</th>
+                                <th>Preço Venda</th>
+                                <th>Alerta Mín.</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Transactions View -->
+        <section id="view-transactions" class="content-view">
+            <div class="view-header">
+                <h1>Registro de Transações</h1>
+                <button class="btn btn-primary" id="btn-add-transaction">+ Nova Entrada/Saída</button>
+            </div>
+            <div class="card">
+                <div class="table-container">
+                    <table id="transactions-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Produto</th>
+                                <th>Quantidade</th>
+                                <th>Preço Un. (Venda)</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Modals -->
+<div id="modal-product" class="modal">
+    <div class="modal-content card">
+        <h2 id="modal-product-title">Adicionar Produto</h2>
+        <form id="form-product">
+            <input type="hidden" id="product-id">
+            <div class="form-group">
+                <label for="p-name">Nome do Produto</label>
+                <input type="text" id="p-name" required placeholder="Ex: Desinfetante Lavanda">
+            </div>
+            <div class="form-row">
                 <div class="form-group">
-                    <label for="p-name">Nome do Produto</label>
-                    <input type="text" id="p-name" required placeholder="Ex: Desinfetante Lavanda">
+                    <label for="p-size">Tamanho/Volume</label>
+                    <select id="p-size" required>
+                        <option value="1L">1 Litro</option>
+                        <option value="2L">2 Litros</option>
+                        <option value="500ml">500 ml</option>
+                        <option value="5L">5 Litros</option>
+                    </select>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="p-size">Tamanho/Volume</label>
-                        <select id="p-size" required>
-                            <option value="1L">1 Litro</option>
-                            <option value="2L">2 Litros</option>
-                            <option value="500ml">500 ml</option>
-                            <option value="5L">5 Litros</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="p-purchase-price">Preço Unitário Custo (R$)</label>
-                        <input type="number" id="p-purchase-price" step="0.01" required placeholder="0,00">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="p-sales-price">Preço de Venda (R$)</label>
-                        <input type="number" id="p-sales-price" step="0.01" required placeholder="0,00">
-                    </div>
-                    <div class="form-group">
-                        <label for="p-min-alert">Estoque Mínimo</label>
-                        <input type="number" id="p-min-alert" value="5" required>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="p-stock">Quantidade em Estoque</label>
-                        <input type="number" id="p-stock" value="0" required>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary close-modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="modal-transaction" class="modal">
-        <div class="modal-content card">
-            <h2 id="modal-transaction-title">Nova Transação</h2>
-            <form id="form-transaction">
-                <input type="hidden" id="transaction-id">
                 <div class="form-group">
-                    <label for="t-product">Produto</label>
-                    <select id="t-product" required></select>
+                    <label for="p-purchase-price">Preço Unitário Custo (R$)</label>
+                    <input type="number" id="p-purchase-price" step="0.01" required placeholder="0,00">
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="t-type">Tipo</label>
-                        <select id="t-type" required>
-                            <option value="IN">Entrada (Compra/Reposição)</option>
-                            <option value="OUT">Saída (Venda)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="t-qty">Quantidade</label>
-                        <input type="number" id="t-qty" required min="1">
-                    </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="p-sales-price">Preço de Venda (R$)</label>
+                    <input type="number" id="p-sales-price" step="0.01" required placeholder="0,00">
                 </div>
-                <div class="form-group" id="sales-price-container">
-                    <label for="t-price">Preço de Venda Unitário (R$)</label>
-                    <input type="number" id="t-price" step="0.01" value="0.00">
+                <div class="form-group">
+                    <label for="p-min-alert">Estoque Mínimo</label>
+                    <input type="number" id="p-min-alert" value="5" required>
                 </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary close-modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Registrar</button>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="p-stock">Quantidade em Estoque</label>
+                    <input type="number" id="p-stock" value="0" required>
                 </div>
-            </form>
-        </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary close-modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <script src="app.js"></script>
+<div id="modal-transaction" class="modal">
+    <div class="modal-content card">
+        <h2 id="modal-transaction-title">Nova Transação</h2>
+        <form id="form-transaction">
+            <input type="hidden" id="transaction-id">
+            <div class="form-group">
+                <label for="t-product">Produto</label>
+                <select id="t-product" required></select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="t-type">Tipo</label>
+                    <select id="t-type" required>
+                        <option value="IN">Entrada (Compra/Reposição)</option>
+                        <option value="OUT">Saída (Venda)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="t-qty">Quantidade</label>
+                    <input type="number" id="t-qty" required min="1">
+                </div>
+            </div>
+            <div class="form-group" id="sales-price-container">
+                <label for="t-price">Preço de Venda Unitário (R$)</label>
+                <input type="number" id="t-price" step="0.01" value="0.00">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary close-modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Registrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="app.js"></script>
 </body>
 
 </html>

@@ -26,11 +26,53 @@ const sidebarOverlay = document.getElementById('sidebar-overlay');
 const sidebar = document.querySelector('.sidebar');
 const closeModals = document.querySelectorAll('.close-modal');
 
+// Auth Elements
+const authOverlay = document.getElementById('auth-overlay');
+const appContainer = document.querySelector('.app-container');
+const formLogin = document.getElementById('form-login');
+const formSignup = document.getElementById('form-signup');
+const authTabs = document.querySelectorAll('.auth-tab');
+const btnGoogleLogin = document.getElementById('btn-google-login');
+const btnLogout = document.getElementById('btn-logout');
+
+let currentUser = null;
+
 // Page Load
 document.addEventListener('DOMContentLoaded', () => {
-    initApp();
+    // Check initial auth state
+    _supabase.auth.getSession().then(({ data: { session } }) => {
+        handleAuthStateChange(session);
+    });
+
+    // Listen for auth changes
+    _supabase.auth.onAuthStateChange((_event, session) => {
+        handleAuthStateChange(session);
+    });
+
     setupEventListeners();
 });
+
+function handleAuthStateChange(session) {
+    if (session) {
+        // User logged in
+        currentUser = session.user;
+        authOverlay.classList.remove('active');
+        appContainer.style.display = 'flex';
+        initApp(); // Load data only when logged in
+    } else {
+        // User logged out
+        currentUser = null;
+        appContainer.style.display = 'none';
+        authOverlay.classList.add('active');
+        // Clear data
+        products = [];
+        transactions = [];
+        updateDashboard();
+        renderProductsTable();
+        renderTransactionsTable();
+        switchView('dashboard');
+    }
+}
 
 async function initApp() {
     await fetchData();
@@ -125,6 +167,86 @@ function setupEventListeners() {
             container.style.display = 'none';
         }
     });
+
+    // --- Auth Listeners ---
+    authTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const target = tab.getAttribute('data-tab');
+            authTabs.forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            
+            tab.classList.add('active');
+            document.getElementById(`form-${target}`).classList.add('active');
+        });
+    });
+
+    if (formLogin) {
+        formLogin.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('btn-login');
+            
+            try {
+                btn.textContent = 'Carregando...';
+                btn.disabled = true;
+                const { error } = await _supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+            } catch (error) {
+                alert('Erro ao entrar: ' + error.message);
+            } finally {
+                btn.textContent = 'Entrar';
+                btn.disabled = false;
+            }
+        });
+    }
+
+    if (formSignup) {
+        formSignup.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const btn = document.getElementById('btn-signup');
+            
+            try {
+                btn.textContent = 'Carregando...';
+                btn.disabled = true;
+                const { error } = await _supabase.auth.signUp({ email, password });
+                if (error) throw error;
+                alert('Conta criada! Verifique seu email ou tente fazer login.');
+                // Switch back to login tab
+                document.querySelector('.auth-tab[data-tab="login"]').click();
+            } catch (error) {
+                alert('Erro ao criar conta: ' + error.message);
+            } finally {
+                btn.textContent = 'Criar Conta';
+                btn.disabled = false;
+            }
+        });
+    }
+
+    if (btnGoogleLogin) {
+        btnGoogleLogin.addEventListener('click', async () => {
+            try {
+                const { error } = await _supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin
+                    }
+                });
+                if (error) throw error;
+            } catch (error) {
+                console.error('Erro Google:', error);
+                alert('Erro ao conectar com Google: ' + error.message);
+            }
+        });
+    }
+
+    if (btnLogout) {
+        btnLogout.addEventListener('click', async () => {
+            await _supabase.auth.signOut();
+        });
+    }
 }
 
 function switchView(view) {
@@ -248,88 +370,121 @@ function renderTransactions() {
 async function handleProductSubmit(e) {
     e.preventDefault();
     const id = document.getElementById('product-id').value;
+    
+    const name = document.getElementById('p-name').value.trim();
+    const size = document.getElementById('p-size').value;
+    const purchasePrice = parseFloat(document.getElementById('p-purchase-price').value) || 0;
+    const salesPrice = parseFloat(document.getElementById('p-sales-price').value) || 0;
+    const stockQuantity = parseInt(document.getElementById('p-stock').value) || 0;
+    const minAlert = parseInt(document.getElementById('p-min-alert').value) || 0;
+
     const productData = {
-        name: document.getElementById('p-name').value,
-        size: document.getElementById('p-size').value,
-        purchase_price: parseFloat(document.getElementById('p-purchase-price').value),
-        sales_price: parseFloat(document.getElementById('p-sales-price').value),
-        stock_quantity: parseInt(document.getElementById('p-stock').value),
-        min_stock_alert: parseInt(document.getElementById('p-min-alert').value)
+        name: name,
+        size: size,
+        purchase_price: purchasePrice,
+        sales_price: salesPrice,
+        stock_quantity: stockQuantity,
+        min_stock_alert: minAlert
     };
 
-    if (id) {
-        // Update
-        const { error } = await _supabase.from('products').update(productData).eq('id', id);
-        if (error) alert('Erro ao atualizar produto: ' + error.message);
-    } else {
-        // Create
-        const { error } = await _supabase.from('products').insert([productData]);
-        if (error) alert('Erro ao criar produto: ' + error.message);
-    }
-
+    // Close modal immediately for better UX
     modalProduct.classList.remove('active');
-    await initApp();
+
+    try {
+        if (id) {
+            // Update
+            const { error } = await _supabase.from('products').update(productData).eq('id', id);
+            if (error) throw error;
+        } else {
+            // Create
+            const { error } = await _supabase.from('products').insert([productData]);
+            if (error) throw error;
+        }
+    } catch (err) {
+        console.error('API Error (Product):', err);
+        alert('Erro ao processar produto: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+        await initApp();
+    }
 }
 
 async function handleTransactionSubmit(e) {
     e.preventDefault();
     const id = document.getElementById('transaction-id').value;
     const type = document.getElementById('t-type').value;
-    const qty = parseInt(document.getElementById('t-qty').value);
+    const qty = parseInt(document.getElementById('t-qty').value) || 0;
     const productId = document.getElementById('t-product').value;
-    const price = parseFloat(document.getElementById('t-price').value);
+    const price = parseFloat(document.getElementById('t-price').value) || 0;
 
-    // If editing, we first need to REVERSE the old transaction effect on stock
-    if (id) {
-        const oldT = transactions.find(t => t.id === id);
-        if (oldT) {
-            await adjustStock(oldT.product_id, oldT.type === 'IN' ? -oldT.quantity : oldT.quantity);
-        }
-        
-        const { error } = await _supabase.from('transactions').update({
-            product_id: productId,
-            type: type,
-            quantity: qty,
-            price_per_unit: type === 'OUT' ? price : 0
-        }).eq('id', id);
-        
-        if (error) {
-            alert('Erro ao atualizar transação: ' + error.message);
-            return;
-        }
-    } else {
-        // New Transaction
-        const { error } = await _supabase.from('transactions').insert([{
-            product_id: productId,
-            type: type,
-            quantity: qty,
-            price_per_unit: type === 'OUT' ? price : 0
-        }]);
-        
-        if (error) {
-            alert('Erro ao criar transação: ' + error.message);
-            return;
-        }
+    if (!productId) {
+        alert('Por favor, selecione um produto.');
+        return;
     }
 
-    // Apply new effect on stock
-    await adjustStock(productId, type === 'IN' ? qty : -qty);
-
+    // Close modal immediately
     modalTransaction.classList.remove('active');
-    await initApp();
+
+    try {
+        // If editing, we first need to REVERSE the old transaction effect on stock
+        if (id) {
+            const oldT = transactions.find(t => t.id === id);
+            if (oldT) {
+                await adjustStock(oldT.product_id, oldT.type === 'IN' ? -oldT.quantity : oldT.quantity);
+            }
+            
+            const { error } = await _supabase.from('transactions').update({
+                product_id: productId,
+                type: type,
+                quantity: qty,
+                price_per_unit: type === 'OUT' ? price : 0
+            }).eq('id', id);
+            
+            if (error) throw error;
+        } else {
+            // New Transaction
+            const { error } = await _supabase.from('transactions').insert([{
+                product_id: productId,
+                type: type,
+                quantity: qty,
+                price_per_unit: type === 'OUT' ? price : 0
+            }]);
+            
+            if (error) throw error;
+        }
+
+        // Apply new effect on stock
+        await adjustStock(productId, type === 'IN' ? qty : -qty);
+
+    } catch (err) {
+        console.error('API Error (Transaction):', err);
+        alert('Erro ao processar transação: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+        await initApp();
+    }
 }
 
 async function adjustStock(productId, delta) {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
-    
-    const newStock = (product.stock_quantity || 0) + delta;
-    const { error } = await _supabase
-        .from('products')
-        .update({ stock_quantity: newStock })
-        .eq('id', productId);
-    
-    if (error) console.error('Error adjusting stock:', error);
+    try {
+        // Fetch fresh value to avoid race conditions
+        const { data, error: fetchError } = await _supabase
+            .from('products')
+            .select('stock_quantity')
+            .eq('id', productId)
+            .single();
+        
+        if (fetchError) throw fetchError;
+        
+        const newStock = (data.stock_quantity || 0) + delta;
+        
+        const { error: updateError } = await _supabase
+            .from('products')
+            .update({ stock_quantity: newStock })
+            .eq('id', productId);
+        
+        if (updateError) throw updateError;
+    } catch (err) {
+        console.error('Stock Adjustment Error:', err);
+    }
 }
 
 // Global functions for inline buttons
