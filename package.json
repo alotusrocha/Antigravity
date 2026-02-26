@@ -1,0 +1,10 @@
+{
+    "name": "antigravity-inventory",
+    "version": "1.0.0",
+    "scripts": {
+        "dev": "vite --port 5173"
+    },
+    "devDependencies": {
+        "vite": "^6.0.0"
+    }
+}
