@@ -26,12 +26,22 @@ const sidebarOverlay = document.getElementById('sidebar-overlay');
 const sidebar = document.querySelector('.sidebar');
 const closeModals = document.querySelectorAll('.close-modal');
 
+// Report Elements
+const viewReports = document.getElementById('view-reports');
+const btnGenerateReport = document.getElementById('btn-generate-report');
+const btnPrintReport = document.getElementById('btn-print-report');
+const reportContent = document.getElementById('report-content');
+const filterStartDate = document.getElementById('filter-start-date');
+const filterEndDate = document.getElementById('filter-end-date');
+const filterType = document.getElementById('filter-type');
+
 // Auth Elements
 const authOverlay = document.getElementById('auth-overlay');
 const appContainer = document.querySelector('.app-container');
-const formLogin = document.getElementById('form-login');
-const formSignup = document.getElementById('form-signup');
-const authTabs = document.querySelectorAll('.auth-tab');
+const authStateLogin = document.getElementById('auth-state-login');
+const authStatePending = document.getElementById('auth-state-pending');
+const pendingEmail = document.getElementById('pending-email');
+const btnPendingLogout = document.getElementById('btn-pending-logout');
 const btnGoogleLogin = document.getElementById('btn-google-login');
 const btnLogout = document.getElementById('btn-logout');
 
@@ -52,18 +62,43 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
 });
 
-function handleAuthStateChange(session) {
+async function handleAuthStateChange(session) {
     if (session) {
-        // User logged in
-        currentUser = session.user;
-        authOverlay.classList.remove('active');
-        appContainer.style.display = 'flex';
-        initApp(); // Load data only when logged in
+        // User logged in via Google
+        const userEmail = session.user.email;
+        
+        // Check whitelist
+        const { data: whitelistData, error: whitelistError } = await _supabase
+            .from('usuarios_autorizados')
+            .select('email')
+            .eq('email', userEmail)
+            .single();
+
+        if (whitelistData) {
+            // Authorized
+            currentUser = session.user;
+            authOverlay.classList.remove('active');
+            appContainer.style.display = 'flex';
+            initApp(); // Load data
+        } else {
+            // Not Authorized (Pending)
+            currentUser = null;
+            appContainer.style.display = 'none';
+            authOverlay.classList.add('active');
+            authStateLogin.style.display = 'none';
+            authStatePending.style.display = 'block';
+            pendingEmail.textContent = userEmail;
+            if (whitelistError && whitelistError.code !== 'PGRST116') {
+                console.error('Error checking whitelist:', whitelistError);
+            }
+        }
     } else {
         // User logged out
         currentUser = null;
         appContainer.style.display = 'none';
         authOverlay.classList.add('active');
+        authStateLogin.style.display = 'block';
+        authStatePending.style.display = 'none';
         // Clear data
         products = [];
         transactions = [];
@@ -169,62 +204,6 @@ function setupEventListeners() {
     });
 
     // --- Auth Listeners ---
-    authTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const target = tab.getAttribute('data-tab');
-            authTabs.forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-            
-            tab.classList.add('active');
-            document.getElementById(`form-${target}`).classList.add('active');
-        });
-    });
-
-    if (formLogin) {
-        formLogin.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const btn = document.getElementById('btn-login');
-            
-            try {
-                btn.textContent = 'Carregando...';
-                btn.disabled = true;
-                const { error } = await _supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-            } catch (error) {
-                alert('Erro ao entrar: ' + error.message);
-            } finally {
-                btn.textContent = 'Entrar';
-                btn.disabled = false;
-            }
-        });
-    }
-
-    if (formSignup) {
-        formSignup.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            const btn = document.getElementById('btn-signup');
-            
-            try {
-                btn.textContent = 'Carregando...';
-                btn.disabled = true;
-                const { error } = await _supabase.auth.signUp({ email, password });
-                if (error) throw error;
-                alert('Conta criada! Verifique seu email ou tente fazer login.');
-                // Switch back to login tab
-                document.querySelector('.auth-tab[data-tab="login"]').click();
-            } catch (error) {
-                alert('Erro ao criar conta: ' + error.message);
-            } finally {
-                btn.textContent = 'Criar Conta';
-                btn.disabled = false;
-            }
-        });
-    }
-
     if (btnGoogleLogin) {
         btnGoogleLogin.addEventListener('click', async () => {
             try {
@@ -247,8 +226,148 @@ function setupEventListeners() {
             await _supabase.auth.signOut();
         });
     }
+
+    if (btnPendingLogout) {
+        btnPendingLogout.addEventListener('click', async () => {
+            await _supabase.auth.signOut();
+        });
+    }
+
+    // Reports
+    if (btnGenerateReport) {
+        btnGenerateReport.addEventListener('click', generateReport);
+    }
+    if (btnPrintReport) {
+        btnPrintReport.addEventListener('click', () => {
+            window.print();
+        });
+    }
 }
 
+// --- Report Generation Functions ---
+function generateReport() {
+    const startDate = filterStartDate.value;
+    const endDate = filterEndDate.value;
+    const type = filterType.value;
+
+    let filtered = [...transactions];
+
+    if (startDate) {
+        filtered = filtered.filter(t => new Date(t.created_at) >= new Date(startDate));
+    }
+    if (endDate) {
+        // Add one day to endDate to include transactions on the end date
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1);
+        filtered = filtered.filter(t => new Date(t.created_at) < end);
+    }
+    if (type !== 'ALL') {
+        filtered = filtered.filter(t => t.type === type);
+    }
+
+    renderReport(filtered, startDate, endDate, type);
+}
+
+function renderReport(data, startDate, endDate, type) {
+    let totalIn = 0;
+    let totalOut = 0;
+    let netProfit = 0;
+
+    data.forEach(t => {
+        const itemTotal = t.quantity * t.price_per_unit; // Use price_per_unit from transaction
+        if (t.type === 'IN') {
+            totalIn += itemTotal;
+        } else {
+            totalOut += itemTotal;
+            // Profit calculation: (sales price - unit cost) * quantity
+            const product = products.find(p => p.id === t.product_id);
+            if (product) {
+                netProfit += (t.price_per_unit - product.purchase_price) * t.quantity; // Use price_per_unit from transaction
+            }
+        }
+    });
+
+    const typeLabel = type === 'ALL' ? 'Todas as Transações' : type === 'IN' ? 'Entradas (Compras)' : 'Saídas (Vendas)';
+    const formatDateBr = (dStr) => {
+        if (!dStr) return null;
+        const [y, m, d] = dStr.split('-');
+        return `${d}/${m}/${y}`;
+    };
+    
+    const startStr = formatDateBr(startDate);
+    const endStr = formatDateBr(endDate);
+    const dateLabel = (startStr || endStr) ? `${startStr || 'Início'} até ${endStr || 'Hoje'}` : 'Todo o período';
+
+    let html = `
+        <div class="report-header">
+            <h2>Relatório de Operações - CleanStock</h2>
+            <p><strong>Período:</strong> ${dateLabel}</p>
+            <p><strong>Tipo:</strong> ${typeLabel}</p>
+        </div>
+        
+        <div class="report-summary">
+            <div class="report-summary-card">
+                <h4>Total Entradas (Custo)</h4>
+                <div class="value" style="color: var(--danger);">${formatCurrency(totalIn)}</div>
+            </div>
+            <div class="report-summary-card">
+                <h4>Total Saídas (Receita)</h4>
+                <div class="value" style="color: var(--success);">${formatCurrency(totalOut)}</div>
+            </div>
+            <div class="report-summary-card">
+                <h4>Lucro Bruto (Apenas Vendas)</h4>
+                <div class="value" style="color: var(--primary);">${formatCurrency(netProfit)}</div>
+            </div>
+        </div>
+
+        <div class="report-table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Produto</th>
+                        <th>Qtd.</th>
+                        <th>Preço Un.</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+    if (data.length === 0) {
+        html += `<tr><td colspan="6" style="text-align: center;">Nenhuma transação encontrada para este período.</td></tr>`;
+    } else {
+        // Sort data by date ascending for the report
+        data.slice().sort((a,b) => new Date(a.created_at) - new Date(b.created_at)).forEach(t => {
+            const product = products.find(p => p.id === t.product_id);
+            const productName = product ? product.name : 'Produto Excluído';
+            const itemTotal = t.quantity * t.price_per_unit;
+            const typeText = t.type === 'IN' ? 'Entrada' : 'Saída';
+            const typeColor = t.type === 'IN' ? 'var(--danger)' : 'var(--success)';
+            
+            html += `
+                <tr>
+                    <td>${new Date(t.created_at).toLocaleDateString('pt-BR')}</td>
+                    <td style="color: ${typeColor}; font-weight: 500;">${typeText}</td>
+                    <td>${productName}</td>
+                    <td>${t.quantity}</td>
+                    <td>${formatCurrency(t.price_per_unit)}</td>
+                    <td><strong>${formatCurrency(itemTotal)}</strong></td>
+                </tr>
+            `;
+        });
+    }
+
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    reportContent.innerHTML = html;
+    reportContent.style.display = 'block';
+}
 function switchView(view) {
     currentView = view;
     navItems.forEach(item => item.classList.remove('active'));
@@ -257,6 +376,7 @@ function switchView(view) {
     viewDashboard.classList.remove('active');
     viewProducts.classList.remove('active');
     viewTransactions.classList.remove('active');
+    viewReports.classList.remove('active');
 
     document.getElementById(`view-${view}`).classList.add('active');
     renderAll();

@@ -14,51 +14,15 @@
 
 <!-- Auth Overlay -->
 <div id="auth-overlay" class="auth-overlay active">
-    <div class="auth-card card">
+    <!-- Google Login State -->
+    <div class="auth-card card" id="auth-state-login">
         <div class="auth-header">
             <span class="logo-icon">✨</span>
             <h2>CleanStock</h2>
-            <p>Gestão Inteligente de Estoque</p>
+            <p>Acesso Restrito</p>
         </div>
 
-        <div class="auth-tabs">
-            <button class="auth-tab active" data-tab="login">Entrar</button>
-            <button class="auth-tab" data-tab="signup">Criar Conta</button>
-        </div>
-
-        <!-- Login Form -->
-        <form id="form-login" class="auth-form active">
-            <div class="form-group">
-                <label for="login-email">E-mail</label>
-                <input type="email" id="login-email" required placeholder="seu@email.com">
-            </div>
-            <div class="form-group">
-                <label for="login-password">Senha</label>
-                <input type="password" id="login-password" required autocomplete="current-password"
-                    placeholder="••••••••">
-            </div>
-            <button type="submit" class="btn btn-primary w-100 mt-3" id="btn-login">Entrar</button>
-        </form>
-
-        <!-- Sign Up Form -->
-        <form id="form-signup" class="auth-form">
-            <div class="form-group">
-                <label for="signup-email">E-mail</label>
-                <input type="email" id="signup-email" required placeholder="seu@email.com">
-            </div>
-            <div class="form-group">
-                <label for="signup-password">Senha (mínimo 6 caracteres)</label>
-                <input type="password" id="signup-password" required minlength="6" autocomplete="new-password"
-                    placeholder="••••••••">
-            </div>
-            <button type="submit" class="btn btn-primary w-100 mt-3" id="btn-signup">Criar Conta</button>
-        </form>
-
-        <div class="auth-divider">
-            <span>ou</span>
-        </div>
-
-        <button class="btn btn-google w-100" id="btn-google-login">
+        <button class="btn btn-google w-100 mt-3" id="btn-google-login">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20px" height="20px">
                 <path fill="#FFC107"
                     d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
@@ -71,6 +35,23 @@
             </svg>
             Continuar com o Google
         </button>
+    </div>
+
+    <!-- Pending State -->
+    <div class="auth-card card" id="auth-state-pending" style="display: none; text-align: center;">
+        <div class="auth-header">
+            <span class="logo-icon" style="filter: grayscale(1);">🔒</span>
+            <h2>Acesso Pendente</h2>
+            <p>Seu e-mail requer autorização.</p>
+        </div>
+        <p class="text-muted" style="margin-bottom: 2rem; font-size: 0.9rem;">
+            Você fez login com sucesso como <strong id="pending-email" style="color: var(--text-main);"></strong>, mas
+            este e-mail ainda não está na lista de usuários autorizados desta empresa.
+        </p>
+        <p class="text-muted" style="margin-bottom: 2rem; font-size: 0.9rem;">
+            Por favor, solicite ao administrador que adicione seu e-mail à lista de acesso.
+        </p>
+        <button class="btn btn-secondary w-100" id="btn-pending-logout">Sair e tentar outra conta</button>
     </div>
 </div>
 
@@ -91,6 +72,9 @@
             </button>
             <button class="nav-item" data-view="transactions">
                 <span class="icon">⇄</span> Transações
+            </button>
+            <button class="nav-item" data-view="reports">
+                <span class="icon">📄</span> Relatórios
             </button>
         </nav>
         <div class="sidebar-footer">
@@ -234,6 +218,44 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </section>
+
+        <!-- Reports View -->
+        <section id="view-reports" class="content-view">
+            <div class="view-header no-print">
+                <h1>Relatórios</h1>
+                <button class="btn btn-secondary" id="btn-print-report">
+                    <span class="icon">🖨️</span> Imprimir / Salvar PDF
+                </button>
+            </div>
+            <div class="card no-print" style="margin-bottom: 2rem;">
+                <div class="filter-controls form-row" style="align-items: flex-end;">
+                    <div class="form-group">
+                        <label for="filter-start-date">Data Inicial</label>
+                        <input type="date" id="filter-start-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-end-date">Data Final</label>
+                        <input type="date" id="filter-end-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-type">Tipo</label>
+                        <select id="filter-type">
+                            <option value="ALL">Todas</option>
+                            <option value="IN">Apenas Entradas (Compras)</option>
+                            <option value="OUT">Apenas Saídas (Vendas)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-primary w-100" id="btn-generate-report">Gerar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Content Area (Printable) -->
+            <div id="report-content" class="printable-area card" style="display: none;">
+                <!-- Dynamically generated report will go here -->
             </div>
         </section>
     </main>

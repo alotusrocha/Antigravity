@@ -731,3 +731,121 @@ select:focus {
         font-size: 1.25rem;
     }
 }
+
+/* --- Reports & Print Styles --- */
+.filter-controls {
+    gap: 1rem;
+}
+
+.report-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.report-header h2 {
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.report-header p {
+    color: var(--text-muted);
+}
+
+.report-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.report-summary-card {
+    background: var(--bg-body);
+    padding: 1rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
+.report-summary-card h4 {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.report-summary-card .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.report-table-wrapper {
+    margin-top: 2rem;
+}
+
+/* Print Specific Styles */
+@media print {
+    body {
+        background-color: white;
+        color: black;
+    }
+
+    .sidebar,
+    .top-header,
+    .no-print {
+        display: none !important;
+    }
+
+    .app-container {
+        padding: 0;
+        margin: 0;
+        height: auto;
+    }
+
+    .main-content {
+        padding: 0;
+    }
+
+    #view-reports {
+        padding: 0;
+    }
+
+    .printable-area {
+        display: block !important;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+    }
+
+    .report-summary-card {
+        border: 1px solid #ccc;
+        /* Ensure borders print */
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    table th,
+    table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    table th {
+        background-color: #f2f2f2 !important;
+        /* Force background print */
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+
+    /* Prevent page breaks inside rows */
+    tr {
+        page-break-inside: avoid;
+    }
+}
