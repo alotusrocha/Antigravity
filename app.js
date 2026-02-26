@@ -21,6 +21,9 @@ const formProduct = document.getElementById('form-product');
 const formTransaction = document.getElementById('form-transaction');
 const btnAddProduct = document.getElementById('btn-add-product');
 const btnAddTransaction = document.getElementById('btn-add-transaction');
+const menuToggle = document.getElementById('menu-toggle');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+const sidebar = document.querySelector('.sidebar');
 const closeModals = document.querySelectorAll('.close-modal');
 
 // Page Load
@@ -63,7 +66,26 @@ function setupEventListeners() {
         item.addEventListener('click', () => {
             const view = item.getAttribute('data-view');
             switchView(view);
+            // Close sidebar on mobile after clicking
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('active');
+                menuToggle.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+            }
         });
+    });
+
+    // Mobile Menu Toggle
+    menuToggle.addEventListener('click', () => {
+        menuToggle.classList.toggle('active');
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+    });
+
+    sidebarOverlay.addEventListener('click', () => {
+        menuToggle.classList.remove('active');
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
     });
 
     // Modals
