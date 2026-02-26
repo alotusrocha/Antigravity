@@ -34,7 +34,8 @@
             </div>
             <div class="form-group">
                 <label for="login-password">Senha</label>
-                <input type="password" id="login-password" required placeholder="••••••••">
+                <input type="password" id="login-password" required autocomplete="current-password"
+                    placeholder="••••••••">
             </div>
             <button type="submit" class="btn btn-primary w-100 mt-3" id="btn-login">Entrar</button>
         </form>
@@ -47,7 +48,8 @@
             </div>
             <div class="form-group">
                 <label for="signup-password">Senha (mínimo 6 caracteres)</label>
-                <input type="password" id="signup-password" required minlength="6" placeholder="••••••••">
+                <input type="password" id="signup-password" required minlength="6" autocomplete="new-password"
+                    placeholder="••••••••">
             </div>
             <button type="submit" class="btn btn-primary w-100 mt-3" id="btn-signup">Criar Conta</button>
         </form>
@@ -320,7 +322,7 @@
     </div>
 </div>
 
-<script src="app.js"></script>
+<script type="module" src="./app.js"></script>
 </body>
 
 </html>
