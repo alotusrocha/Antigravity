@@ -40,14 +40,20 @@ serve(async (req) => {
     // 2. Define the System Prompt
     const systemPrompt = `Você é o Assistente Virtual do CleanStock. Ajude o usuário a gerenciar o estoque de produtos de limpeza.
     
-Contexto:
+Contexto do Estoque:
 ${productsContext}
 
+BASE DE CONHECIMENTO (Instruções de Uso do UM 20 em 1 - siteser.com.br/um/):
+- Cozinha: 1/2 tampa (20ml) para 1L de água. Ideal para desengordurar grelhas, coifas, panelas e louças.
+- Lavanderia: 1 tampa completa para cada nível da máquina. Substitui sabão em pó, amaciante e alvejante. Pode ser usado em qualquer tecido e cor.
+- Banheiro: 1/2 tampa (20ml) para 3L de água. Limpa box do banheiro, pia, piso, sanitário e espelho.
+
 Regras:
-- Seja sempre educado, conciso e profissional em português.
-- Você tem a ferramenta "add_transaction" para adicionar/registrar compras e vendas.
-- Se o usuário disser que comprou ou vendeu algo, use a ferramenta "add_transaction" com o "product_id" correto.
-- "IN" é para compras (entrada de estoque) e "OUT" é para vendas (saída de estoque).`
+- Seja sempre educado, conciso e profissional. Responda em português.
+- Você tem ferramentas para gerenciar o sistema: "add_transaction", "delete_product" e "delete_transaction".
+- Ao ser solicitado para registrar compra ou venda, use "add_transaction". "IN" para compras, "OUT" para vendas.
+- Ao ser solicitado para excluir ou deletar um produto, use "delete_product". (Cuidado: certifique-se do ID testando com o estoque acima).
+- Ao ser solicitado para excluir uma transação/pedido/venda, use "delete_transaction".`
 
     // 3. Define Tools for Gemini Function Calling
     const tools = [{
@@ -64,6 +70,28 @@ Regras:
               price_per_unit: { type: "NUMBER", description: "O valor unitário pago ou cobrado na transação." }
             },
             required: ["product_id", "type", "quantity", "price_per_unit"]
+          }
+        },
+        {
+          name: "delete_product",
+          description: "Exclui/deleta um produto permanentemente do banco de dados.",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              product_id: { type: "STRING", description: "O ID (UUID) do produto a ser excluído." }
+            },
+            required: ["product_id"]
+          }
+        },
+        {
+          name: "delete_transaction",
+          description: "Exclui/deleta um pedido ou transação (venda ou compra).",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              transaction_id: { type: "STRING", description: "O ID numérico da transação a ser excluída." }
+            },
+            required: ["transaction_id"]
           }
         }
       ]
@@ -101,11 +129,11 @@ Regras:
     // 5. Handle Tool Calls
     if (firstPart.functionCall) {
       const call = firstPart.functionCall;
+      const args = call.args;
+      
+      console.log(`Executing tool ${call.name} with args:`, args);
+
       if (call.name === 'add_transaction') {
-        const args = call.args;
-        console.log("Executing add_transaction tool with args:", args);
-        
-        // Insert transaction into database
         const { error: txError } = await supabaseClient.from('transactions').insert({
           product_id: args.product_id,
           type: args.type,
@@ -113,16 +141,32 @@ Regras:
           price_per_unit: args.price_per_unit
         });
 
-        if (txError) {
-          console.error("Error inserting transaction:", txError);
-          return new Response(JSON.stringify({ 
-            reply: `Erro ao adicionar transação: ${txError.message}` 
-          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-        }
-
-        // Return a success message indicating the tool worked
+        if (txError) throw new Error(`Erro ao adicionar transação: ${txError.message}`);
+        
         return new Response(JSON.stringify({ 
           reply: `Pronto! Registrei a ${args.type === 'IN' ? 'compra' : 'venda'} de ${args.quantity} unidades com sucesso.` 
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      } 
+      
+      else if (call.name === 'delete_product') {
+        const { error: delError } = await supabaseClient.from('products').delete().eq('id', args.product_id);
+        
+        if (delError) throw new Error(`Erro ao excluir produto: ${delError.message}`);
+
+        return new Response(JSON.stringify({ 
+          reply: `Produto excluído do sistema com sucesso.` 
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      else if (call.name === 'delete_transaction') {
+        // Find transaction first to reverse stock (or just let the user see it's deleted)
+        // Wait, the client handles stock recalculation on load. Delete is simple.
+        const { error: delTxError } = await supabaseClient.from('transactions').delete().eq('id', args.transaction_id);
+        
+        if (delTxError) throw new Error(`Erro ao excluir pedido: ${delTxError.message}`);
+
+        return new Response(JSON.stringify({ 
+          reply: `Pedido/Transação excluída com sucesso.` 
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
     }
