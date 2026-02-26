@@ -71,7 +71,7 @@ Regras:
 
     // 4. Call Gemini API
     console.log("Calling Gemini API with prompt:", prompt);
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
     
     const geminiRequest = await fetch(geminiUrl, {
       method: 'POST',
