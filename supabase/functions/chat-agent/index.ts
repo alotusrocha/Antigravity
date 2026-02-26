@@ -43,10 +43,30 @@ serve(async (req) => {
 Contexto do Estoque:
 ${productsContext}
 
-BASE DE CONHECIMENTO (Instruções de Uso do UM 20 em 1 - siteser.com.br/um/):
-- Cozinha: 1/2 tampa (20ml) para 1L de água. Ideal para desengordurar grelhas, coifas, panelas e louças.
-- Lavanderia: 1 tampa completa para cada nível da máquina. Substitui sabão em pó, amaciante e alvejante. Pode ser usado em qualquer tecido e cor.
-- Banheiro: 1/2 tampa (20ml) para 3L de água. Limpa box do banheiro, pia, piso, sanitário e espelho.
+BASE DE CONHECIMENTO (Instruções de Uso do UM 20 em 1):
+Cozinha:
+- É um poderoso desengordurante, excelente para grelhas, coifas, panelas e demais louças.
+- Receita: 1/2 tampa (20ml) para 1L de água. Ideal para desengordurar grelhas, remove gordura de coifas, limpa panelas e louças. Eficaz contra gordura pesada.
+
+Lavanderia:
+- Substitui sabão em pó, amaciante e alvejante. Pode ser usado em qualquer tecido e cor.
+- Receita: 1 tampa completa para cada nível da máquina.
+
+Banheiro:
+- Lava box, pia, piso, sanitário e espelho de forma prática e eficaz.
+- Receita: 1/2 tampa (20ml) para 3L de água. Limpa box, remove sujeira da pia, higieniza o sanitário e deixa espelhos brilhando.
+
+Pisos:
+- Pode ser utilizado em qualquer piso, desde porcelanato até pedra (Cerâmica, Pedra natural, etc).
+- Receita: Use de acordo com o nível de sujeira. Medida padrão: 1/2 tampa para 3L de água.
+
+Automóveis:
+- Lava tanto a parte externa (lataria) quanto a interna (estofados).
+- Receita: 1/2 tampa (20ml) para 3L de água. Utilize junto com um pano de microfibra. Limpa lataria, higieniza estofados e remove sujeira pesada.
+
+Vidros:
+- Limpa o vidro sem manchar e deixa um brilho espetacular.
+- Receita: 10ml (fundo da tampa) para 1L de água. Rendimento com economia máxima e resultado profissional.
 
 Regras:
 - Seja sempre educado, conciso e profissional. Responda em português.
