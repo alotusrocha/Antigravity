@@ -688,13 +688,16 @@ function formatCurrency(value) {
 }
 
 // --- AI Chat Functions ---
+let chatHistory = []; // Armazena o histórico da 
+
 async function handleChatSubmit(e) {
     e.preventDefault();
     const message = chatInput.value.trim();
     if (!message) return;
 
-    // 1. Add user message to UI
+    // 1. Add user message to UI & History
     appendChatMessage('user', message);
+    chatHistory.push({ role: 'user', parts: [{ text: message }] });
     chatInput.value = '';
 
     // 2. Determine if we are waiting for Edge Function
@@ -702,7 +705,7 @@ async function handleChatSubmit(e) {
 
     try {
         const { data, error } = await _supabase.functions.invoke('chat-agent', {
-            body: { prompt: message }
+            body: { history: chatHistory }
         });
 
         removeChatLoading();
@@ -711,9 +714,12 @@ async function handleChatSubmit(e) {
             console.error('Edge Function Error:', error);
             appendChatMessage('ai', 'Desculpe, ocorreu um erro ao se comunicar com o servidor.');
         } else if (data && data.reply) {
+            // Salva a resposta do modelo no histórico para que ele tenha contexto depois
+            chatHistory.push({ role: 'model', parts: [{ text: data.reply }] });
             appendChatMessage('ai', data.reply);
+            
             // Se a IA registrou uma transação, atualizamos a tela
-            if (data.reply.includes('sucesso')) {
+            if (data.reply.includes('sucesso') || data.reply.includes('cadastrado')) {
                 await initApp(); // Recarrega os dados do banco
             }
         } else {

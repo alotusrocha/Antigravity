@@ -13,9 +13,9 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt } = await req.json()
-    if (!prompt) {
-      throw new Error('Prompt is required')
+    const { history } = await req.json()
+    if (!history || !Array.isArray(history)) {
+      throw new Error('History array is required')
     }
 
     // Get API Keys from Deno Environment (Secrets)
@@ -140,7 +140,7 @@ Regras de Comportamento e Coleta de Dados:
     }];
 
     // 4. Call Gemini API
-    console.log("Calling Gemini API with prompt:", prompt);
+    console.log("Calling Gemini API with history length:", history.length);
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
     
     const geminiRequest = await fetch(geminiUrl, {
@@ -152,9 +152,7 @@ Regras de Comportamento e Coleta de Dados:
         system_instruction: { 
           parts: [{ text: systemPrompt }] 
         },
-        contents: [
-          { role: 'user', parts: [{ text: prompt }] }
-        ],
+        contents: history,
         tools: tools
       })
     })
