@@ -19,6 +19,7 @@ const modalProduct = document.getElementById('modal-product');
 const modalTransaction = document.getElementById('modal-transaction');
 const formProduct = document.getElementById('form-product');
 const formTransaction = document.getElementById('form-transaction');
+const tPriceLabel = document.getElementById('t-price-label');
 const btnAddProduct = document.getElementById('btn-add-product');
 const btnAddTransaction = document.getElementById('btn-add-transaction');
 const menuToggle = document.getElementById('menu-toggle');
@@ -201,13 +202,12 @@ function setupEventListeners() {
     formProduct.addEventListener('submit', handleProductSubmit);
     formTransaction.addEventListener('submit', handleTransactionSubmit);
 
-    // Transaction Type change (show/hide sales price)
+    // Transaction Type change (update label)
     document.getElementById('t-type').addEventListener('change', (e) => {
-        const container = document.getElementById('sales-price-container');
         if (e.target.value === 'OUT') {
-            container.style.display = 'block';
+            tPriceLabel.innerText = 'Preço de Venda Unitário (R$)';
         } else {
-            container.style.display = 'none';
+            tPriceLabel.innerText = 'Preço de Custo Unitário (R$)';
         }
     });
 
@@ -497,7 +497,7 @@ function renderTransactions() {
             <td><span class="badge badge-${t.type.toLowerCase()}">${t.type === 'IN' ? 'Entrada' : 'Saída'}</span></td>
             <td>${t.products?.name || '---'}</td>
             <td>${t.quantity}</td>
-            <td>${t.type === 'OUT' ? formatCurrency(t.price_per_unit) : '---'}</td>
+            <td>${formatCurrency(t.price_per_unit)}</td>
             <td>
                 <div class="d-flex gap-2">
                     <button class="btn-icon btn-edit" onclick="editTransaction('${t.id}')">✏️ Editar</button>
@@ -579,7 +579,7 @@ async function handleTransactionSubmit(e) {
                 product_id: productId,
                 type: type,
                 quantity: qty,
-                price_per_unit: type === 'OUT' ? price : 0
+                price_per_unit: price
             }).eq('id', id);
             
             if (error) throw error;
@@ -589,7 +589,7 @@ async function handleTransactionSubmit(e) {
                 product_id: productId,
                 type: type,
                 quantity: qty,
-                price_per_unit: type === 'OUT' ? price : 0
+                price_per_unit: price
             }]);
             
             if (error) throw error;
@@ -665,7 +665,7 @@ window.editTransaction = (id) => {
     document.getElementById('t-qty').value = t.quantity;
     document.getElementById('t-price').value = t.price_per_unit;
     
-    document.getElementById('sales-price-container').style.display = t.type === 'OUT' ? 'block' : 'none';
+    tPriceLabel.innerText = t.type === 'OUT' ? 'Preço de Venda Unitário (R$)' : 'Preço de Custo Unitário (R$)';
     document.getElementById('modal-transaction-title').innerText = 'Editar Transação';
     modalTransaction.classList.add('active');
 };
