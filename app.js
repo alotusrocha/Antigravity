@@ -568,12 +568,8 @@ async function handleTransactionSubmit(e) {
     modalTransaction.classList.remove('active');
 
     try {
-        // If editing, we first need to REVERSE the old transaction effect on stock
+        // If editing, the database Trigger handles the stock reversal and update automatically
         if (id) {
-            const oldT = transactions.find(t => t.id === id);
-            if (oldT) {
-                await adjustStock(oldT.product_id, oldT.type === 'IN' ? -oldT.quantity : oldT.quantity);
-            }
             
             const { error } = await _supabase.from('transactions').update({
                 product_id: productId,
@@ -595,8 +591,7 @@ async function handleTransactionSubmit(e) {
             if (error) throw error;
         }
 
-        // Apply new effect on stock
-        await adjustStock(productId, type === 'IN' ? qty : -qty);
+        // Successfully updated/inserted. Database triggers will handle stock_quantity.
 
     } catch (err) {
         console.error('API Error (Transaction):', err);
@@ -606,29 +601,7 @@ async function handleTransactionSubmit(e) {
     }
 }
 
-async function adjustStock(productId, delta) {
-    try {
-        // Fetch fresh value to avoid race conditions
-        const { data, error: fetchError } = await _supabase
-            .from('products')
-            .select('stock_quantity')
-            .eq('id', productId)
-            .single();
-        
-        if (fetchError) throw fetchError;
-        
-        const newStock = (data.stock_quantity || 0) + delta;
-        
-        const { error: updateError } = await _supabase
-            .from('products')
-            .update({ stock_quantity: newStock })
-            .eq('id', productId);
-        
-        if (updateError) throw updateError;
-    } catch (err) {
-        console.error('Stock Adjustment Error:', err);
-    }
-}
+// adjustStock removed - now handled by DB Triggers
 
 // Global functions for inline buttons
 window.editProduct = (id) => {
@@ -674,8 +647,7 @@ window.deleteTransaction = async (id) => {
     const t = transactions.find(t => t.id === id);
     if (!t || !confirm('Tem certeza? O estoque será ajustado automaticamente.')) return;
 
-    // Reverse stock effect
-    await adjustStock(t.product_id, t.type === 'IN' ? -t.quantity : t.quantity);
+    // Database triggers will handle stock_quantity automatically on delete
 
     const { error } = await _supabase.from('transactions').delete().eq('id', id);
     if (error) alert('Erro ao excluir: ' + error.message);

@@ -193,7 +193,7 @@ Regras de Comportamento e Coleta de Dados:
         const { data: newProd, error: prodError } = await supabaseClient.from('products').insert({
           name: args.name,
           size: args.size,
-          stock_quantity: args.stock_quantity,
+          stock_quantity: 0, // Inicia em 0, a transação abaixo definirá o saldo via Trigger
           purchase_price: args.purchase_price,
           sales_price: args.sales_price || 0
         }).select().single();
