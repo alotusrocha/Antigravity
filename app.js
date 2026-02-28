@@ -12,6 +12,8 @@ let currentView = 'dashboard';
 const viewDashboard = document.getElementById('view-dashboard');
 const viewProducts = document.getElementById('view-products');
 const viewTransactions = document.getElementById('view-transactions');
+const viewReports = document.getElementById('view-reports');
+const viewGuide = document.getElementById('view-guide');
 const navItems = document.querySelectorAll('.nav-item');
 
 // Modals & Forms
@@ -28,7 +30,6 @@ const sidebar = document.querySelector('.sidebar');
 const closeModals = document.querySelectorAll('.close-modal');
 
 // Report Elements
-const viewReports = document.getElementById('view-reports');
 const btnGenerateReport = document.getElementById('btn-generate-report');
 const btnPrintReport = document.getElementById('btn-print-report');
 const reportContent = document.getElementById('report-content');
@@ -400,7 +401,8 @@ function switchView(view) {
     viewProducts.classList.remove('active');
     viewTransactions.classList.remove('active');
     viewReports.classList.remove('active');
-
+    viewGuide.classList.remove('active');
+ 
     document.getElementById(`view-${view}`).classList.add('active');
     renderAll();
 }
@@ -409,6 +411,7 @@ function renderAll() {
     if (currentView === 'dashboard') renderDashboard();
     if (currentView === 'products') renderProducts();
     if (currentView === 'transactions') renderTransactions();
+    if (currentView === 'guide') { /* Static view, no dynamic render needed */ }
 }
 
 // --- Render Functions ---

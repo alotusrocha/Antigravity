@@ -840,8 +840,8 @@ select:focus {
     table th {
         background-color: #f2f2f2 !important;
         /* Force background print */
+        print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
-        color-adjust: exact;
     }
 
     /* Prevent page breaks inside rows */
